@@ -2,9 +2,9 @@ name: Build Windows EXE — إحصاء السكن الريفي (Python)
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ new_12-05-2026 ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ new_12-05-2026 ]
   workflow_dispatch:
 
 jobs:
@@ -13,37 +13,64 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      # ── 1. Checkout ───────────────────────────────────────────────
+      # ─────────────────────────────────────────────
+      # 1) تحميل المشروع
+      # ─────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 2. Python 3.11 (آخر نسخة مستقرة متوافقة مع Windows 7+) ──
+      # ─────────────────────────────────────────────
+      # 2) تثبيت Python 3.11
+      # ─────────────────────────────────────────────
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      # ── 3. تثبيت المكتبات ─────────────────────────────────────────
+      # ─────────────────────────────────────────────
+      # 3) تثبيت المكتبات
+      # ─────────────────────────────────────────────
       - name: Install dependencies
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
+
+          # إزالة مكتبة docx القديمة إن وجدت
+          pip uninstall -y docx
+
+          # تثبيت المتطلبات
           pip install -r requirements.txt
+
+          # تثبيت python-docx الصحيحة
+          pip install python-docx
+
+          # PyInstaller
           pip install pyinstaller
 
-      # ── 4. التحقق من الاستيراد ────────────────────────────────────
+      # ─────────────────────────────────────────────
+      # 4) التحقق من الاستيراد
+      # ─────────────────────────────────────────────
       - name: Verify imports
+        shell: pwsh
         run: |
           python -c "import PyQt6; print('PyQt6 OK')"
-          python -c "import docx; print('python-docx OK')"
+
+          python -c "from docx import Document; print('python-docx OK')"
+          python -c "from docx.util import Inches, Pt, Cm; print('docx.util OK')"
+
           python -c "import reportlab; print('reportlab OK')"
           python -c "import openpyxl; print('openpyxl OK')"
 
-      # ── 5. بناء EXE بـ PyInstaller ────────────────────────────────
+      # ─────────────────────────────────────────────
+      # 5) بناء EXE
+      # ─────────────────────────────────────────────
       - name: Build EXE
         shell: pwsh
         run: |
           pyinstaller `
+            --clean `
+            --noconfirm `
             --onefile `
             --windowed `
             --name "ihsaa2026" `
@@ -53,36 +80,73 @@ jobs:
             --hidden-import "arabic_reshaper" `
             --hidden-import "bidi.algorithm" `
             --hidden-import "reportlab.graphics" `
+            --hidden-import "reportlab.graphics.barcode" `
+            --hidden-import "reportlab.platypus" `
             --hidden-import "docx" `
+            --hidden-import "docx.util" `
+            --hidden-import "docx.shared" `
+            --hidden-import "docx.enum.text" `
+            --hidden-import "docx.enum.table" `
+            --hidden-import "docx.oxml" `
             --hidden-import "openpyxl" `
+            --collect-all "docx" `
             --collect-all "PyQt6" `
             --collect-all "arabic_reshaper" `
             main.py
 
-      # ── 6. معلومات البناء ─────────────────────────────────────────
+      # ─────────────────────────────────────────────
+      # 6) معلومات البناء
+      # ─────────────────────────────────────────────
       - name: Build info
         shell: pwsh
         run: |
           Write-Host "══════════════════════════════════════"
-          Write-Host "✅ Windows EXE built successfully"
+
           if (Test-Path "dist\ihsaa2026.exe") {
-            $size = [math]::Round((Get-Item "dist\ihsaa2026.exe").Length / 1MB, 1)
-            Write-Host "EXE size: $size MB"
+
+            $size = [math]::Round(
+              (Get-Item "dist\ihsaa2026.exe").Length / 1MB,
+              1
+            )
+
+            Write-Host "✅ Windows EXE built successfully"
+            Write-Host "📦 EXE size: $size MB"
+
+          } else {
+
+            Write-Error "❌ EXE file not found!"
+            exit 1
           }
+
           Write-Host "══════════════════════════════════════"
 
-      # ── 7. ضغط الناتج ─────────────────────────────────────────────
+      # ─────────────────────────────────────────────
+      # 7) ضغط الملف
+      # ─────────────────────────────────────────────
       - name: Compress Release
         shell: pwsh
         run: |
           $ts = Get-Date -Format "yyyyMMdd_HHmm"
+
           $zipName = "ihsaa2026_windows_${ts}.zip"
-          Compress-Archive -Path "dist\ihsaa2026.exe" -DestinationPath $zipName
-          $size = [math]::Round((Get-Item $zipName).Length / 1MB, 1)
-          Write-Host "ZIP: $zipName  ($size MB)"
+
+          Compress-Archive `
+            -Path "dist\ihsaa2026.exe" `
+            -DestinationPath $zipName
+
+          $size = [math]::Round(
+            (Get-Item $zipName).Length / 1MB,
+            1
+          )
+
+          Write-Host "✅ ZIP created: $zipName"
+          Write-Host "📦 ZIP size: $size MB"
+
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
 
-      # ── 8. رفع الأرتيفاكت ─────────────────────────────────────────
+      # ─────────────────────────────────────────────
+      # 8) رفع الملف النهائي
+      # ─────────────────────────────────────────────
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4
         with:

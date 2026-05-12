@@ -19,7 +19,6 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 from docx.shared import Pt, RGBColor, Cm, Inches
-from docx.util import Twips
 
 from ..config import DOCS_DIR
 from .database_service import DatabaseService

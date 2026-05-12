@@ -2,9 +2,15 @@ name: Build Windows EXE — إحصاء السكن الريفي (Python)
 
 on:
   push:
-    branches: [ new_12-05-2026 ]
+    branches:
+      - main
+      - master
+
   pull_request:
-    branches: [ new_12-05-2026 ]
+    branches:
+      - main
+      - master
+
   workflow_dispatch:
 
 jobs:
@@ -13,6 +19,7 @@ jobs:
     runs-on: windows-2022
 
     steps:
+
       # ─────────────────────────────────────────────
       # 1) تحميل المشروع
       # ─────────────────────────────────────────────
@@ -20,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
 
       # ─────────────────────────────────────────────
-      # 2) تثبيت Python 3.11
+      # 2) تثبيت Python
       # ─────────────────────────────────────────────
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -36,20 +43,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
-          # إزالة مكتبة docx القديمة إن وجدت
+          # إزالة package الخاطئة إن وجدت
           pip uninstall -y docx
+          pip uninstall -y python-docx
 
-          # تثبيت المتطلبات
+          # تثبيت المكتبة الصحيحة
+          pip install python-docx==1.1.2
+
+          # تثبيت بقية المتطلبات
           pip install -r requirements.txt
-
-          # تثبيت python-docx الصحيحة
-          pip install python-docx
 
           # PyInstaller
           pip install pyinstaller
 
       # ─────────────────────────────────────────────
-      # 4) التحقق من الاستيراد
+      # 4) التحقق من المكتبات
       # ─────────────────────────────────────────────
       - name: Verify imports
         shell: pwsh
@@ -57,13 +65,33 @@ jobs:
           python -c "import PyQt6; print('PyQt6 OK')"
 
           python -c "from docx import Document; print('python-docx OK')"
-          python -c "from docx.util import Inches, Pt, Cm; print('docx.util OK')"
+
+          python -c "from docx.shared import Pt, Cm, Inches; print('docx.shared OK')"
 
           python -c "import reportlab; print('reportlab OK')"
+
           python -c "import openpyxl; print('openpyxl OK')"
 
       # ─────────────────────────────────────────────
-      # 5) بناء EXE
+      # 5) تنظيف قديم
+      # ─────────────────────────────────────────────
+      - name: Clean old builds
+        shell: pwsh
+        run: |
+          if (Test-Path build) {
+            Remove-Item build -Recurse -Force
+          }
+
+          if (Test-Path dist) {
+            Remove-Item dist -Recurse -Force
+          }
+
+          if (Test-Path "*.spec") {
+            Remove-Item *.spec -Force
+          }
+
+      # ─────────────────────────────────────────────
+      # 6) بناء EXE
       # ─────────────────────────────────────────────
       - name: Build EXE
         shell: pwsh
@@ -76,6 +104,10 @@ jobs:
             --name "ihsaa2026" `
             --icon "assets/fonts/icon.ico" `
             --add-data "assets;assets" `
+            --collect-submodules "docx" `
+            --collect-data "docx" `
+            --collect-all "PyQt6" `
+            --collect-all "arabic_reshaper" `
             --hidden-import "PyQt6.sip" `
             --hidden-import "arabic_reshaper" `
             --hidden-import "bidi.algorithm" `
@@ -83,19 +115,16 @@ jobs:
             --hidden-import "reportlab.graphics.barcode" `
             --hidden-import "reportlab.platypus" `
             --hidden-import "docx" `
-            --hidden-import "docx.util" `
+            --hidden-import "docx.api" `
             --hidden-import "docx.shared" `
             --hidden-import "docx.enum.text" `
             --hidden-import "docx.enum.table" `
             --hidden-import "docx.oxml" `
             --hidden-import "openpyxl" `
-            --collect-all "docx" `
-            --collect-all "PyQt6" `
-            --collect-all "arabic_reshaper" `
             main.py
 
       # ─────────────────────────────────────────────
-      # 6) معلومات البناء
+      # 7) التحقق من نجاح البناء
       # ─────────────────────────────────────────────
       - name: Build info
         shell: pwsh
@@ -121,7 +150,7 @@ jobs:
           Write-Host "══════════════════════════════════════"
 
       # ─────────────────────────────────────────────
-      # 7) ضغط الملف
+      # 8) ضغط الملف
       # ─────────────────────────────────────────────
       - name: Compress Release
         shell: pwsh
@@ -145,7 +174,7 @@ jobs:
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
 
       # ─────────────────────────────────────────────
-      # 8) رفع الملف النهائي
+      # 9) رفع الملف النهائي
       # ─────────────────────────────────────────────
       - name: Upload Release Artifact
         uses: actions/upload-artifact@v4

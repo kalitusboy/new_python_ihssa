@@ -3,14 +3,10 @@ name: Build Windows EXE — إحصاء السكن الريفي (Python)
 on:
   push:
     branches:
-      - main
-      - master
-
+      - 13-05-2026
   pull_request:
     branches:
-      - main
-      - master
-
+      - 13-05-2026
   workflow_dispatch:
 
 jobs:
@@ -42,18 +38,9 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
-
-          # إزالة package الخاطئة إن وجدت
-          pip uninstall -y docx
-          pip uninstall -y python-docx
-
-          # تثبيت المكتبة الصحيحة
+          pip uninstall -y docx python-docx
           pip install python-docx==1.1.2
-
-          # تثبيت بقية المتطلبات
           pip install -r requirements.txt
-
-          # PyInstaller
           pip install pyinstaller
 
       # ─────────────────────────────────────────────
@@ -63,13 +50,9 @@ jobs:
         shell: pwsh
         run: |
           python -c "import PyQt6; print('PyQt6 OK')"
-
           python -c "from docx import Document; print('python-docx OK')"
-
           python -c "from docx.shared import Pt, Cm, Inches; print('docx.shared OK')"
-
           python -c "import reportlab; print('reportlab OK')"
-
           python -c "import openpyxl; print('openpyxl OK')"
 
       # ─────────────────────────────────────────────
@@ -78,49 +61,42 @@ jobs:
       - name: Clean old builds
         shell: pwsh
         run: |
-          if (Test-Path build) {
-            Remove-Item build -Recurse -Force
-          }
-
-          if (Test-Path dist) {
-            Remove-Item dist -Recurse -Force
-          }
-
-          if (Test-Path "*.spec") {
-            Remove-Item *.spec -Force
-          }
+          if (Test-Path build) { Remove-Item build -Recurse -Force }
+          if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+          if (Test-Path "*.spec") { Remove-Item *.spec -Force }
 
       # ─────────────────────────────────────────────
-      # 6) بناء EXE
+      # 6) بناء التطبيق (مجموعة مجلد)
       # ─────────────────────────────────────────────
-      - name: Build EXE
+      - name: Build EXE (onedir)
         shell: pwsh
         run: |
           pyinstaller `
             --clean `
             --noconfirm `
-            --onefile `
+            --onedir `
             --windowed `
             --name "ihsaa2026" `
             --icon "assets/fonts/icon.ico" `
             --add-data "assets;assets" `
-            --collect-submodules "docx" `
-            --collect-data "docx" `
-            --collect-all "PyQt6" `
-            --collect-all "arabic_reshaper" `
-            --hidden-import "PyQt6.sip" `
-            --hidden-import "arabic_reshaper" `
-            --hidden-import "bidi.algorithm" `
-            --hidden-import "reportlab.graphics" `
-            --hidden-import "reportlab.graphics.barcode" `
-            --hidden-import "reportlab.platypus" `
-            --hidden-import "docx" `
-            --hidden-import "docx.api" `
-            --hidden-import "docx.shared" `
-            --hidden-import "docx.enum.text" `
-            --hidden-import "docx.enum.table" `
-            --hidden-import "docx.oxml" `
-            --hidden-import "openpyxl" `
+            --collect-all PyQt6 `
+            --collect-all reportlab `
+            --collect-all python-docx `
+            --collect-all arabic_reshaper `
+            --collect-all bidi `
+            --hidden-import PyQt6.sip `
+            --hidden-import arabic_reshaper `
+            --hidden-import bidi.algorithm `
+            --hidden-import reportlab.graphics `
+            --hidden-import reportlab.platypus `
+            --hidden-import reportlab.lib `
+            --hidden-import docx `
+            --hidden-import docx.api `
+            --hidden-import docx.shared `
+            --hidden-import docx.enum.text `
+            --hidden-import docx.enum.table `
+            --hidden-import docx.oxml `
+            --hidden-import openpyxl `
             main.py
 
       # ─────────────────────────────────────────────
@@ -130,47 +106,32 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "══════════════════════════════════════"
-
-          if (Test-Path "dist\ihsaa2026.exe") {
-
-            $size = [math]::Round(
-              (Get-Item "dist\ihsaa2026.exe").Length / 1MB,
-              1
+          $exePath = "dist\ihsaa2026\ihsaa2026.exe"
+          if (Test-Path $exePath) {
+            $folderSize = [math]::Round(
+              (Get-ChildItem -Path "dist\ihsaa2026" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB,
+              2
             )
-
-            Write-Host "✅ Windows EXE built successfully"
-            Write-Host "📦 EXE size: $size MB"
-
+            Write-Host "✅ Build folder created successfully"
+            Write-Host "📁 Folder size: $folderSize MB"
           } else {
-
-            Write-Error "❌ EXE file not found!"
+            Write-Error "❌ ihsaa2026.exe not found in dist\ihsaa2026\"
             exit 1
           }
-
           Write-Host "══════════════════════════════════════"
 
       # ─────────────────────────────────────────────
-      # 8) ضغط الملف
+      # 8) ضغط المجلد للتوزيع
       # ─────────────────────────────────────────────
       - name: Compress Release
         shell: pwsh
         run: |
           $ts = Get-Date -Format "yyyyMMdd_HHmm"
-
           $zipName = "ihsaa2026_windows_${ts}.zip"
-
-          Compress-Archive `
-            -Path "dist\ihsaa2026.exe" `
-            -DestinationPath $zipName
-
-          $size = [math]::Round(
-            (Get-Item $zipName).Length / 1MB,
-            1
-          )
-
+          Compress-Archive -Path "dist\ihsaa2026" -DestinationPath $zipName
+          $zipSize = [math]::Round((Get-Item $zipName).Length / 1MB, 2)
           Write-Host "✅ ZIP created: $zipName"
-          Write-Host "📦 ZIP size: $size MB"
-
+          Write-Host "📦 ZIP size: $zipSize MB"
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
 
       # ─────────────────────────────────────────────

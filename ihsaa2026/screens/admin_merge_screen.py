@@ -1,4 +1,4 @@
-"""شاشة دمج بيانات الأعوان (المدير) — مطابقة لـ admin_merge_screen.dart.
+""شاشة دمج بيانات الأعوان (المدير) — مطابقة لـ admin_merge_screen.dart.
 
 المنطق مطابق 100% لنسخة Flutter:
   1. اختيار ملفات JSON من الأعوان
@@ -186,7 +186,7 @@ class AdminMergeScreen(QWidget):
 
     # ── بناء الواجهة ───────────────────────────────────────────────
     def _build_ui(self):
-        self.setLayoutDirection(Qt.RightToLeft)
+        self.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
         self.setStyleSheet(f"background:{BG_LIGHT};")
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 16, 16, 16)
@@ -194,8 +194,8 @@ class AdminMergeScreen(QWidget):
 
         # ── عنوان ─────────────────────────────────────────────────
         title = QLabel("👥 دمج بيانات الأعوان (المدير)")
-        title.setFont(QFont("Cairo", 15, QFont.Bold))
-        title.setAlignment(Qt.AlignCenter)
+        title.setFont(QFont("Cairo", 15, QFont.Weight.Bold))
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet(f"color:{PRIMARY}; padding:8px;")
         root.addWidget(title)
 
@@ -336,3 +336,4 @@ class AdminMergeScreen(QWidget):
         self._set_busy(False)
         self._log(msg)
         QMessageBox.critical(self, "❌ خطأ", msg[:400])
+

@@ -79,6 +79,7 @@ jobs:
             --name "ihsaa2026" `
             --icon "assets/fonts/icon.ico" `
             --add-data "assets;assets" `
+            --collect-all ihsaa2026 `
             --collect-all PyQt6 `
             --collect-all reportlab `
             --collect-all python-docx `

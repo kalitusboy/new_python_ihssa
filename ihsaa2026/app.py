@@ -66,7 +66,6 @@ class MainWindow(QMainWindow):
 
 
 def run() -> int:
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)  # type: ignore[attr-defined]
     app = QApplication(sys.argv)
     app.setApplicationName("إحصاء السكن الريفي 2026")
     app.setOrganizationName("Nassim Hamiti — Houden")
@@ -85,3 +84,4 @@ def run() -> int:
 
 if __name__ == "__main__":
     sys.exit(run())
+

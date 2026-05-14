@@ -1,0 +1,63 @@
+# ── Python ────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-wheel-metadata/
+*.whl
+
+# ── PyInstaller ───────────────────────────────────────────────────
+*.spec
+dist/
+build/
+*.manifest
+
+# ── Virtual Environments ──────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ── IDE ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# ── بيانات المستخدم (لا ترفعها أبداً) ───────────────────────────
+# قاعدة البيانات المحلية
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# الصور والنسخ الاحتياطية
+/data/
+/backups/
+/images/
+/tmp/
+
+# الملفات المُصدَّرة
+*.pdf
+*.docx
+*.xlsx
+*_backup_*.json
+merged_database_*.json
+ihsa_images_*.zip
+
+# ── GitHub Actions مؤقت ──────────────────────────────────────────
+ihsaa2026_windows_*.zip
+
+# ── الإعدادات المحلية ─────────────────────────────────────────────
+settings.json
+*.log
